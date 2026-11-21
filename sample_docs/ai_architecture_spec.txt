@@ -1,0 +1,29 @@
+# DocuReader AI Architecture Specification
+
+## Section 1: Overview and Objectives
+DocuReader AI is an AI-powered enterprise Retrieval-Augmented Generation (RAG) platform.
+The platform provides document ingestion, high-dimensional vector embeddings, vector similarity search,
+and grounded question answering with accurate page-level citations.
+
+## Section 2: Ingestion & Text Processing
+Supported document formats include PDF (Portable Document Format), DOCX (Microsoft Word), and plain text.
+Text extraction is executed using Apache PDFBox for PDFs and Apache POI for DOCX documents.
+The chunking engine applies a sliding-window algorithm with a default chunk size of 500 words and 100 words overlap.
+Each chunk preserves its origin page number, document title, and relative sequence index.
+
+## Section 3: Vector Embeddings and Retrieval
+Vector representations are 1536-dimensional float arrays. In production, OpenAI embeddings (text-embedding-3-small)
+are generated. When running offline or in demo mode without API credentials, an internal deterministic
+vectorizer generates normalized embeddings. Similarity search utilizes cosine similarity with a configurable
+relevance threshold (default 0.15).
+
+## Section 4: Security and Ownership
+The backend enforces role-based access control with JSON Web Tokens (JWT) signed with HMAC-SHA256.
+Users are partitioned into registered users (ROLE_USER) and guest demo accounts (ROLE_DEMO).
+Document isolation guarantees that queries only retrieve chunks belonging to the requesting user.
+Demo users are rate-limited to 5 queries per session, with short-lived guest sessions pruned automatically after two hours.
+
+## Section 5: Real-Time Streaming
+The chat subsystem utilizes Server-Sent Events (SSE) via Spring SseEmitter.
+Tokens are streamed in real-time as the language model generates them, followed by a final citation event
+containing document titles, page numbers, and exact text excerpts.

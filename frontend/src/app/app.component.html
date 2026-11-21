@@ -1,0 +1,458 @@
+<!-- Sticky Top Navigation -->
+<header class="nav">
+  <div class="nav__logo" (click)="activeTab = 'landing'; scrollToDemo()">
+    DocReader<span>.ai</span>
+  </div>
+
+  <div class="nav__links">
+    <a href="#demo" (click)="scrollToDemo(); $event.preventDefault()" [class.active]="activeTab === 'landing'">Live demo</a>
+    <button type="button" (click)="activeTab = 'workspace'" [class.active]="activeTab === 'workspace'">Workspace & Docs</button>
+    <a href="https://github.com/SONUYADAVGITHUB/DocReader_AI" target="_blank" rel="noopener">GitHub</a>
+  </div>
+
+  <div class="nav__auth">
+    <!-- Quota badge for guest sessions -->
+    <div *ngIf="currentUser?.isDemo" class="nav__quota" title="Guest Demo Quota">
+      <span>{{ remainingQueries }}/{{ totalDemoQueries }} queries left</span>
+    </div>
+
+    <!-- Authenticated User vs Guest Actions -->
+    <ng-container *ngIf="currentUser && !currentUser.isDemo; else unauthBlock">
+      <span class="nav__user">{{ currentUser.username }}</span>
+      <button type="button" class="nav__logout" (click)="authService.logout()">Sign out</button>
+    </ng-container>
+
+    <ng-template #unauthBlock>
+      <button type="button" class="nav__login" (click)="openAuthModal('login')">Log in</button>
+      <button type="button" class="nav__signup" (click)="openAuthModal('register')">Sign up</button>
+    </ng-template>
+  </div>
+</header>
+
+<!-- =========================================================================
+     LANDING VIEW: HERO + #DEMO (Matching https://99bugsnofeature.in/#demo)
+     ========================================================================= -->
+<main *ngIf="activeTab === 'landing'">
+
+  <!-- HERO SECTION -->
+  <section class="hero" [class.is-loaded]="isLoaded">
+    <div class="hero__body">
+      
+      <!-- Left Column: Copy & Actions -->
+      <div class="hero__content">
+        <p class="hero__eyebrow">Business document intelligence</p>
+        
+        <h1 class="hero__headline">
+          <span class="hero__line">Ask your documents</span>
+          <span class="hero__line hero__line--accent">anything.</span>
+        </h1>
+
+        <p class="hero__subhead">
+          Upload contracts, invoices, and reports. DocReader reads every line and answers in seconds — with the source clause cited every time.
+        </p>
+
+        <div class="hero__actions">
+          <button type="button" class="hero__btn hero__btn--primary" (click)="scrollToDemo()">
+            Try the live demo
+          </button>
+          <a class="hero__btn hero__btn--ghost" href="https://github.com/SONUYADAVGITHUB/DocReader_AI" target="_blank" rel="noopener">
+            View source on GitHub
+          </a>
+        </div>
+
+        <div class="hero__stack">
+          <span class="hero__stack-label">Built with</span>
+          <ul class="hero__stack-list">
+            <li>Angular</li>
+            <li>Spring Boot</li>
+            <li>Java 17</li>
+            <li>Groq & OpenAI</li>
+            <li>PostgreSQL</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Right Column: Document Visual Graphic with Highlights & Scanline -->
+      <div class="hero__panel">
+        <div class="hero__doc">
+          <div class="hero__doc-header">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          
+          <div class="hero__doc-body">
+            <div *ngFor="let line of docLines" 
+                 class="hero__doc-line" 
+                 [class.is-highlight]="line.highlight"
+                 [style.width.%]="line.width">
+            </div>
+            
+            <div class="hero__scanline"></div>
+          </div>
+
+          <!-- Floating Metadata Callout Tags -->
+          <div *ngFor="let tag of annotations" 
+               class="hero__tag" 
+               [style.top.%]="tag.top"
+               [style.animation-delay]="tag.delay + 's'">
+            <span class="hero__tag-label">{{ tag.label }}</span>
+            <span class="hero__tag-value">{{ tag.value }}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- DEMO SECTION (#demo) -->
+  <section id="demo" class="demo">
+    <div class="demo__intro">
+      <p class="demo__eyebrow">Try it yourself — no account needed</p>
+      <h2 class="demo__title">Upload a document. Ask it anything.</h2>
+      <p class="demo__subtitle">
+        PDF or DOCX, up to 5MB. Nothing is saved in demo mode — Try logging in for saving document and extra features.
+      </p>
+    </div>
+
+    <div class="demo__panel">
+      
+      <!-- Drag & Drop Area -->
+      <div class="demo__dropzone"
+           [class.is-dragging]="isDragging"
+           [class.has-file]="selectedDemoFile || usingSample"
+           (dragover)="onDragOver($event)"
+           (dragleave)="onDragLeave()"
+           (drop)="onDrop($event)">
+        
+        <ng-container *ngIf="!selectedDemoFile && !usingSample">
+          <p class="demo__dropzone-text">
+            Drag a file here, or 
+            <label class="demo__browse">
+              browse
+              <input type="file" (change)="onDemoFileSelected($event)" accept=".pdf,.docx,.txt" hidden>
+            </label>
+          </p>
+        </ng-container>
+
+        <div *ngIf="selectedDemoFile" class="demo__file">
+          <span class="demo__file-name">📄 {{ selectedDemoFile.name }} ({{ formatBytes(selectedDemoFile.size) }})</span>
+          <button type="button" class="demo__file-remove" aria-label="Remove file" (click)="clearDemoFile()">✕</button>
+        </div>
+
+        <div *ngIf="usingSample" class="demo__file">
+          <span class="demo__file-name">📄 sample-document.pdf (Software Services Agreement)</span>
+          <button type="button" class="demo__file-remove" aria-label="Stop using sample document" (click)="clearDemoFile()">✕</button>
+        </div>
+      </div>
+
+      <!-- Sample document quick helper -->
+      <div class="demo__sample">
+        <span class="demo__sample-tag">Sample document</span>
+        <button type="button" class="demo__sample-btn" (click)="useSampleDocument()">
+          Don't have a file handy? Try our sample document
+        </button>
+        <a class="demo__sample-download" [href]="samplePdfUrl" download="sample-document.pdf">
+          Download it first
+        </a>
+      </div>
+
+      <!-- Prompt suggestions chips -->
+      <div class="demo__prompts">
+        <button type="button" *ngFor="let q of demoSuggestedQuestions" class="demo__prompt-chip" (click)="useDemoPrompt(q)">
+          {{ q }}
+        </button>
+      </div>
+
+      <!-- Question Textarea -->
+      <textarea rows="3" 
+                [(ngModel)]="demoQuestion" 
+                placeholder="e.g. What's the total due, and when does it renew?" 
+                class="demo__question"
+                (keydown.enter)="$event.preventDefault(); askDemoQuestion()">
+      </textarea>
+
+      <!-- Error feedback -->
+      <div *ngIf="demoError" class="demo__error">
+        {{ demoError }}
+      </div>
+
+      <!-- Submit button -->
+      <button type="button" 
+              class="demo__submit" 
+              [disabled]="isDemoLoading || isDemoStreaming" 
+              (click)="askDemoQuestion()">
+        {{ isDemoStreaming ? 'Streaming response...' : isDemoLoading ? 'Analyzing document...' : 'Ask DocReader' }}
+      </button>
+
+      <!-- Thinking / Progress indicator -->
+      <div *ngIf="isDemoLoading" class="demo__thinking">
+        <span class="demo__thinking-label">{{ demoStage }}</span>
+        <span class="demo__thinking-dots">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+      </div>
+
+      <!-- Live Answer Box -->
+      <div *ngIf="demoAnswer || isDemoStreaming" class="demo__answer">
+        <div class="demo__answer-header">
+          <span class="demo__answer-label">ANSWER</span>
+          <button *ngIf="demoAnswer" (click)="copyToClipboard(demoAnswer, 999)" class="demo__sample-download" style="background:none; border:none; cursor:pointer;">
+            {{ copiedMessageIndex === 999 ? '✓ Copied' : 'Copy' }}
+          </button>
+        </div>
+
+        <div class="demo__answer-body">
+          <div class="demo__answer-content" [innerHTML]="renderFormattedAnswer(demoAnswer, demoSources)"></div>
+          <span *ngIf="isDemoStreaming" class="demo__cursor"></span>
+        </div>
+
+        <!-- Verified Source Citations -->
+        <div *ngIf="demoSources.length > 0" class="demo__sources">
+          <span class="demo__sources-title">Verified Source Citations ({{ demoSources.length }})</span>
+          <div *ngFor="let src of demoSources; let i = index" class="demo__source-card">
+            <div class="demo__source-header">
+              <span>[Source {{ (src.citationIndex || (i + 1)) }}] {{ src.documentTitle }}</span>
+              <span>Relevance: {{ (src.relevanceScore * 100).toFixed(0) }}%</span>
+            </div>
+            <div class="demo__source-snippet">"{{ (src.excerpt || src.chunkText) }}"</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<!-- =========================================================================
+     WORKSPACE VIEW: FULL DOCUMENT MANAGER & MULTI-DOC CHAT
+     ========================================================================= -->
+<main *ngIf="activeTab === 'workspace'" class="workspace">
+  
+  <div class="workspace__header">
+    <div>
+      <h1 class="workspace__title">Document Workspace</h1>
+      <p class="workspace__subtitle">Manage documents, inspect vector embeddings, and query across multiple sources simultaneously.</p>
+    </div>
+    <button type="button" class="hero__btn hero__btn--ghost" (click)="activeTab = 'landing'">
+      ← Back to Live Demo
+    </button>
+  </div>
+
+  <div class="workspace__grid">
+    
+    <!-- Left Column: Document Upload & Library -->
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+      
+      <!-- Upload Card -->
+      <div class="card">
+        <h3 style="font-family: var(--font-serif); font-size: 1.15rem; margin-bottom: 0.75rem;">Upload Document</h3>
+        <input type="text" [(ngModel)]="customDocTitle" placeholder="Custom document title (optional)" class="auth__input" style="padding: 0.5rem 0.75rem; margin-bottom: 0.75rem;">
+
+        <label style="display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1.5px dashed rgba(20, 23, 28, 0.25); border-radius: 4px; padding: 1.5rem 1rem; text-align: center; cursor: pointer; background: var(--paper);">
+          <input type="file" (change)="onFileSelected($event)" accept=".pdf,.docx,.txt" style="display: none;">
+          <span style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--teal); text-decoration: underline; font-weight: 500;">
+            {{ isUploading ? 'Extracting & Indexing...' : 'Browse PDF or DOCX file' }}
+          </span>
+          <span style="font-size: 0.75rem; color: rgba(20, 23, 28, 0.6); margin-top: 0.35rem;">Auto chunking & 1536d vector embeddings</span>
+        </label>
+
+        <div *ngIf="uploadError" class="demo__error" style="margin-top: 0.75rem;">
+          {{ uploadError }}
+        </div>
+      </div>
+
+      <!-- Indexed Documents List -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h3 style="font-family: var(--font-serif); font-size: 1.15rem; margin: 0;">Documents ({{ documents.length }})</h3>
+          <button *ngIf="documents.length > 0" (click)="selectAllDocs()" style="background: none; border: none; font-family: var(--font-mono); font-size: 0.75rem; color: var(--teal); cursor: pointer;">
+            {{ selectedDocumentIds.length === documents.length ? 'Deselect all' : 'Select all' }}
+          </button>
+        </div>
+
+        <input type="text" [(ngModel)]="documentSearchFilter" placeholder="Filter documents..." class="auth__input" style="padding: 0.45rem 0.75rem; font-size: 0.85rem; margin-bottom: 1rem;">
+
+        <div *ngIf="filteredDocuments.length === 0" style="text-align: center; padding: 1.5rem 0; color: rgba(20, 23, 28, 0.5); font-size: 0.85rem;">
+          No documents found. Upload a file above to get started.
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 0.6rem; max-height: 400px; overflow-y: auto;">
+          <div *ngFor="let doc of filteredDocuments" 
+               (click)="toggleDocumentSelection(doc.id)"
+               [style.border-color]="isDocSelected(doc.id) ? 'var(--teal)' : 'rgba(20, 23, 28, 0.12)'"
+               [style.background]="isDocSelected(doc.id) ? 'rgba(14, 124, 123, 0.05)' : '#fff'"
+               style="border: 1px solid rgba(20, 23, 28, 0.12); border-radius: 4px; padding: 0.75rem; cursor: pointer; transition: all 0.2s ease;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem; overflow: hidden;">
+                <input type="checkbox" [checked]="isDocSelected(doc.id)" (click)="$event.stopPropagation(); toggleDocumentSelection(doc.id)">
+                <div>
+                  <div style="font-size: 0.88rem; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;">
+                    {{ doc.title }}
+                  </div>
+                  <div style="font-family: var(--font-mono); font-size: 0.72rem; color: rgba(20, 23, 28, 0.55);">
+                    {{ doc.chunkCount }} chunks • {{ formatBytes(doc.fileSize) }}
+                  </div>
+                </div>
+              </div>
+
+              <button type="button" (click)="deleteDocument(doc.id, $event)" title="Delete document" style="background: none; border: none; color: var(--rule); cursor: pointer; font-size: 0.9rem;">
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Right Column: Multi-Doc RAG Chat Thread -->
+    <div class="card" style="display: flex; flex-direction: column; min-height: 600px;">
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid rgba(20, 23, 28, 0.1); margin-bottom: 1rem;">
+        <div>
+          <h3 style="font-family: var(--font-serif); font-size: 1.25rem; margin: 0;">Interactive Q&A Session</h3>
+          <p style="font-size: 0.8rem; color: rgba(20, 23, 28, 0.6); margin: 0.2rem 0 0;">
+            {{ selectedDocumentIds.length > 0 ? ('Querying ' + selectedDocumentIds.length + ' selected document(s)') : 'Querying all available documents' }}
+          </p>
+        </div>
+        <button type="button" (click)="newChat()" class="hero__btn hero__btn--ghost" style="padding: 0.4rem 0.85rem; font-size: 0.78rem;">
+          + New Chat
+        </button>
+      </div>
+
+      <!-- Messages Thread -->
+      <div style="flex: 1; overflow-y: auto; padding: 0.5rem 0; display: flex; flex-direction: column; gap: 1.25rem;">
+        
+        <div *ngIf="messages.length === 0" style="text-align: center; padding: 3rem 1rem;">
+          <p style="font-family: var(--font-serif); font-size: 1.15rem; color: var(--ink); margin-bottom: 0.5rem;">Ready to query your documents</p>
+          <p style="font-size: 0.85rem; color: rgba(20, 23, 28, 0.6); max-width: 400px; margin: 0 auto 1.5rem;">Select documents on the left and ask questions. Every response will cite the exact clause.</p>
+
+          <div style="display: flex; flex-direction: column; gap: 0.5rem; max-width: 480px; margin: 0 auto; text-align: left;">
+            <button type="button" *ngFor="let p of promptSuggestions" (click)="useSuggestion(p)" class="demo__prompt-chip" style="padding: 0.5rem 0.85rem; font-size: 0.8rem; text-align: left;">
+              → {{ p }}
+            </button>
+          </div>
+        </div>
+
+        <div *ngFor="let msg of messages; let idx = index" [style.align-self]="msg.role === 'USER' ? 'flex-end' : 'stretch'" [style.max-width]="msg.role === 'USER' ? '85%' : '100%'">
+          
+          <!-- User Query -->
+          <div *ngIf="msg.role === 'USER'" style="background: var(--ink); color: var(--paper); padding: 0.75rem 1rem; border-radius: 4px; font-size: 0.92rem; line-height: 1.5;">
+            {{ msg.content }}
+          </div>
+
+          <!-- Assistant Response -->
+          <div *ngIf="msg.role === 'ASSISTANT'" style="background: var(--paper); border: 1px solid rgba(20, 23, 28, 0.1); border-radius: 4px; padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span class="demo__answer-label">DOCREADER RESPONSE</span>
+              <button *ngIf="msg.content" (click)="copyToClipboard(msg.content, idx)" class="demo__sample-download" style="background:none; border:none; cursor:pointer;">
+                {{ copiedMessageIndex === idx ? '✓ Copied' : 'Copy' }}
+              </button>
+            </div>
+
+            <div class="demo__answer-body">
+              <div class="demo__answer-content" [innerHTML]="renderFormattedAnswer(msg.content, msg.citations)"></div>
+              <span *ngIf="msg.isStreaming" class="demo__cursor"></span>
+            </div>
+
+            <!-- Citations below message -->
+            <div *ngIf="msg.citations && msg.citations.length > 0" class="demo__sources">
+              <span class="demo__sources-title">Sources ({{ msg.citations.length }})</span>
+              <div *ngFor="let c of msg.citations" class="demo__source-card">
+                <div class="demo__source-header">
+                  <span>[Source {{ (c.citationIndex || (idx + 1)) }}] {{ c.documentTitle }}</span>
+                  <span>Score: {{ (c.relevanceScore * 100).toFixed(0) }}%</span>
+                </div>
+                <div class="demo__source-snippet">"{{ (c.excerpt || c.chunkText) }}"</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Chat Input Area -->
+      <div style="padding-top: 1rem; border-top: 1px solid rgba(20, 23, 28, 0.1); margin-top: 1rem;">
+        <div *ngIf="chatError" class="demo__error">{{ chatError }}</div>
+        <div style="display: flex; gap: 0.75rem;">
+          <input type="text" 
+                 [(ngModel)]="currentQuestion" 
+                 (keydown.enter)="sendQuestion()" 
+                 [disabled]="isStreaming" 
+                 placeholder="Ask a question across your selected documents..." 
+                 class="auth__input" 
+                 style="margin: 0; flex: 1;">
+          <button type="button" 
+                  (click)="sendQuestion()" 
+                  [disabled]="isStreaming || !currentQuestion.trim()" 
+                  class="hero__btn hero__btn--primary" 
+                  style="padding: 0 1.25rem;">
+            {{ isStreaming ? '...' : 'Ask' }}
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</main>
+
+<!-- =========================================================================
+     AUTH MODAL (Sign In / Sign Up)
+     ========================================================================= -->
+<div *ngIf="showAuthModal" class="modal-overlay" (click)="showAuthModal = false">
+  <div class="auth__card" (click)="$event.stopPropagation()">
+    <button type="button" class="auth__close" aria-label="Close" (click)="showAuthModal = false">✕</button>
+
+    <div class="auth__logo">
+      DocReader<span>.ai</span>
+    </div>
+
+    <h2 class="auth__title">{{ authMode === 'login' ? 'Welcome back' : 'Create your account' }}</h2>
+    <p class="auth__subtitle">{{ authMode === 'login' ? 'Log in to keep asking your documents questions.' : 'Upload documents and start asking questions with persistent history.' }}</p>
+
+    <div *ngIf="authError" class="demo__error">
+      {{ authError }}
+    </div>
+
+    <form (ngSubmit)="handleAuthSubmit()">
+      <div>
+        <label class="auth__label">Username</label>
+        <input type="text" [(ngModel)]="authUsername" name="username" required autocomplete="username" placeholder="Your username" class="auth__input">
+      </div>
+
+      <div *ngIf="authMode === 'register'">
+        <label class="auth__label">Email</label>
+        <input type="email" [(ngModel)]="authEmail" name="email" required autocomplete="email" placeholder="name@company.com" class="auth__input">
+      </div>
+
+      <div>
+        <label class="auth__label">Password</label>
+        <input type="password" [(ngModel)]="authPassword" name="password" required autocomplete="current-password" placeholder="Enter your password" class="auth__input">
+      </div>
+
+      <button type="submit" class="auth__submit" [disabled]="authLoading">
+        {{ authLoading ? 'Please wait...' : (authMode === 'login' ? 'Log in' : 'Create account') }}
+      </button>
+    </form>
+
+    <p class="auth__switch">
+      <span *ngIf="authMode === 'login'">
+        New to DocReader? 
+        <button type="button" (click)="authMode = 'register'">Create an account</button>
+      </span>
+      <span *ngIf="authMode === 'register'">
+        Already have an account? 
+        <button type="button" (click)="authMode = 'login'">Log in</button>
+      </span>
+    </p>
+  </div>
+</div>

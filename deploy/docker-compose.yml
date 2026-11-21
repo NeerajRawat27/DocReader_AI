@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: docureader-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: docureader
+      POSTGRES_USER: docureader
+      POSTGRES_PASSWORD: docureader_secret
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - docureader-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../deploy/Dockerfile.backend
+    container_name: docureader-backend
+    restart: always
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/docureader
+      SPRING_DATASOURCE_USERNAME: docureader
+      SPRING_DATASOURCE_PASSWORD: docureader_secret
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-qwen/qwen3.8-27b}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.groq.com/openai/v1}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - docureader-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../deploy/Dockerfile.frontend
+    container_name: docureader-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - docureader-net
+
+volumes:
+  pgdata:
+
+networks:
+  docureader-net:
+    driver: bridge
