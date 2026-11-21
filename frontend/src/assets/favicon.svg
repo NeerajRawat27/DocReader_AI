@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1f3a5f" />
+      <stop offset="100%" stop-color="#0f1d30" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background App Badge -->
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#bgGrad)" stroke="#0e7c7b" stroke-width="2.5" />
+
+  <!-- Document Sheet -->
+  <path d="M18 13 C18 12 18.8 11 20 11 L35 11 L46 22 L46 51 C46 52 45.2 53 44 53 L20 53 C18.8 53 18 52 18 51 Z" fill="#edefea" />
+
+  <!-- Folded Page Corner -->
+  <path d="M35 11 L35 20 C35 21.1 35.9 22 37 22 L46 22 Z" fill="#c3ccc7" />
+
+  <!-- Document Text Lines -->
+  <rect x="23" y="26" width="16" height="3" rx="1.5" fill="#1f3a5f" opacity="0.9" />
+  <rect x="23" y="32" width="20" height="3" rx="1.5" fill="#1f3a5f" opacity="0.9" />
+  <rect x="23" y="38" width="12" height="3" rx="1.5" fill="#1f3a5f" opacity="0.9" />
+
+  <!-- AI Gold Sparkle Star -->
+  <path d="M43 35 C43 39.5 45 42 49.5 42 C45 42 43 44.5 43 49 C43 44.5 41 42 36.5 42 C41 42 43 39.5 43 35 Z" fill="#f2b705" />
+  <circle cx="43" cy="42" r="1.5" fill="#ffffff" />
+</svg>
