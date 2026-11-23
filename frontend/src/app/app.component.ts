@@ -30,7 +30,7 @@ export class AppComponent implements OnInit, AfterViewInit {
   activeTab: 'landing' | 'workspace' = 'landing';
   isLoaded = false;
 
-  // Hero Document Mockup Data (matches 99bugsnofeature.in)
+  // Hero Document Mockup Data (https://docureader-frontend.onrender.com)
   docLines = [
     { width: 92, highlight: false },
     { width: 78, highlight: false },

@@ -27,8 +27,16 @@ spring:
     multipart:
       max-file-size: 25MB
       max-request-size: 30MB
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
 
 docureader:
+  redis:
+    enabled: ${DOCUREADER_REDIS_ENABLED:false}
   jwt:
     secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
     expiration-ms: 86400000 # 24 hours

@@ -17,6 +17,10 @@ services:
         generateValue: true
       - key: DOCUREADER_CORS_ALLOWED_ORIGINS
         value: https://*.onrender.com,http://localhost:4200
+      - key: DOCUREADER_REDIS_ENABLED
+        value: "false" # Set to "true" to activate Redis caching with TTL
+      - key: REDIS_URL
+        sync: false # Connect to Render Redis, Upstash, or external Redis (e.g. redis://default:pass@host:port)
 
   # 2. Angular Frontend Static Site
   - type: web

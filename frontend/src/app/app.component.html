@@ -7,7 +7,7 @@
   <div class="nav__links">
     <a href="#demo" (click)="scrollToDemo(); $event.preventDefault()" [class.active]="activeTab === 'landing'">Live demo</a>
     <button type="button" (click)="activeTab = 'workspace'" [class.active]="activeTab === 'workspace'">Workspace & Docs</button>
-    <a href="https://github.com/SONUYADAVGITHUB/DocReader_AI" target="_blank" rel="noopener">GitHub</a>
+    <a href="https://github.com/NeerajRawat27/DocReader_AI" target="_blank" rel="noopener">GitHub</a>
   </div>
 
   <div class="nav__auth">
@@ -30,18 +30,18 @@
 </header>
 
 <!-- =========================================================================
-     LANDING VIEW: HERO + #DEMO (Matching https://99bugsnofeature.in/#demo)
+     LANDING VIEW: HERO + #DEMO (https://docureader-frontend.onrender.com)
      ========================================================================= -->
 <main *ngIf="activeTab === 'landing'">
 
   <!-- HERO SECTION -->
   <section class="hero" [class.is-loaded]="isLoaded">
     <div class="hero__body">
-      
+
       <!-- Left Column: Copy & Actions -->
       <div class="hero__content">
         <p class="hero__eyebrow">Business document intelligence</p>
-        
+
         <h1 class="hero__headline">
           <span class="hero__line">Ask your documents</span>
           <span class="hero__line hero__line--accent">anything.</span>
@@ -55,7 +55,7 @@
           <button type="button" class="hero__btn hero__btn--primary" (click)="scrollToDemo()">
             Try the live demo
           </button>
-          <a class="hero__btn hero__btn--ghost" href="https://github.com/SONUYADAVGITHUB/DocReader_AI" target="_blank" rel="noopener">
+          <a class="hero__btn hero__btn--ghost" href="https://github.com/NeerajRawat27/DocReader_AI" target="_blank" rel="noopener">
             View source on GitHub
           </a>
         </div>

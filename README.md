@@ -85,13 +85,27 @@ DocReader.ai implements comprehensive defenses against OWASP Top 10 for LLMs and
 | Defense | Severity | Technical Implementation |
 | :--- | :--- | :--- |
 | **Indirect Prompt Injection (OWASP LLM01)** | **High** | Document chunks are quarantined inside `<document_context><source id="..." page="...">` XML fences. System meta-prompts strictly order the model to treat document content as untrusted passive reference data and ignore embedded instructions (e.g. *"ignore previous instructions"*). |
-| **Denial of Wallet & Session Flooding** | **High** | IP-based sliding-window rate limiting on `/api/demo/start`. Excessive guest session generation triggers **HTTP 429 Too Many Requests**. |
+| **Denial of Wallet & Session Flooding** | **High** | Dual-mode rate limiting: Distributed Redis with native TTL (`demo:ip:{clientIp}`, `demo:usage:{userId}`) in production, automatically falling back to in-memory sliding window when Redis is disabled/offline. Excessive guest session generation triggers **HTTP 429 Too Many Requests**. |
 | **Zip Bomb & File DoS Protection** | **Medium** | POI `ZipSecureFile.setMinInflateRatio(0.005)` prevents expansion bombs in `.docx`. Extraction is strictly capped at `150 pages` and `1,000,000 characters` (~150k words). |
 | **Malicious Upload & Path Traversal** | **Medium** | Sanitized paths using `Paths.get().getFileName()`. Strict file extension whitelisting (`.pdf`, `.docx`, `.txt`, `.md`). Non-whitelisted files immediately return **HTTP 400 Bad Request**. |
 | **Clickjacking (UI Redressing)** | **Medium** | Enforced `X-Frame-Options: SAMEORIGIN` across all responses, preventing malicious sites from embedding the application inside `<iframe>`s. |
 | **Strict CORS Origin Whitelisting** | **Medium** | Replaced wildcard CORS with explicit allowed origin lists (localhost and configurable production domains). Unauthorized cross-origin requests receive **HTTP 403 Forbidden**. |
 | **Cryptographic JWT Key Derivation** | **Low** | Automatically derives a 256-bit key via cryptographic SHA-256 if the provided secret is short, preventing HMAC-SHA weak-key vulnerabilities. |
 | **Database Console Isolation** | **Low** | In-memory H2 Console has `web-allow-others: false`, restricting access strictly to localhost. |
+
+---
+
+## ⚡ Distributed Redis with TTL (Session & Quota Management)
+
+DocReader.ai provides an enterprise-ready dual-mode session and rate-limiting subsystem:
+
+- **Native Redis TTL Keys**:
+  - `demo:session:{userId}`: Guest session metadata with 60-minute expiration window.
+  - `demo:usage:{userId}`: Atomic query counter (`INCR`) with 60-minute window TTL.
+  - `demo:ip:{clientIp}`: Atomic IP registration counter with 1-hour sliding TTL.
+- **Graceful Zero-Crash Fallback**:
+  - **Local Dev / Free Tier**: Runs 100% in-memory out-of-the-box (`DOCUREADER_REDIS_ENABLED=false`) with zero external service dependencies.
+  - **Production Ready**: Enable with `DOCUREADER_REDIS_ENABLED=true` and `REDIS_URL`. If Redis is temporarily unreachable, all rate limiting automatically and seamlessly degrades to in-memory tracking without throwing 500 errors to users.
 
 ---
 
